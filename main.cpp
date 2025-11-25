@@ -379,6 +379,65 @@ bool A_star(Board start_board, Board& solution_end_node, unordered_map<Board, Bo
     return false;
 }
 
+int next_threshold;
+
+bool IDAS_DFSL(Board board, int g, int threshold, Board& solution_end_node, unordered_map<Board, Board>& parent_map) {
+
+    int h = manhattan_distance(board);
+    int f = g + h;
+
+    if (f > threshold) {
+        if (f < next_threshold) {
+            next_threshold = f;
+        }
+        return false;
+    }
+
+    if (board == GOAL_BOARD) {
+        solution_end_node = board;
+        return true;
+    }
+
+    for (Board next_board : get_neighbors(board)) {
+        if (parent_map.find(next_board) == parent_map.end()) {
+            parent_map[next_board] = board;
+            if (IDAS_DFSL(next_board, g + 1, threshold, solution_end_node, parent_map)) {
+                return true;
+            }
+            parent_map.erase(next_board);
+        }
+    }
+
+    return false;
+}
+
+bool IDA_star(Board start_board, int max_f_limit, Board& solution_end_node, unordered_map<Board, Board>& parent_map) {
+    if (!is_solvable(start_board)) {
+        return false;
+    }
+
+    int threshold = manhattan_distance(start_board);
+
+    parent_map.clear();
+    parent_map[start_board] = start_board;
+
+    while (threshold <= max_f_limit) {
+        next_threshold = MAX_DEPTH * 2;
+
+        if (IDAS_DFSL(start_board, 0, threshold, solution_end_node, parent_map)) {
+            return true;
+        }
+
+        if (next_threshold == MAX_DEPTH * 2) {
+            return false;
+        }
+
+        threshold = next_threshold;
+    }
+
+    return false;
+}
+
 
 int main() {
     setlocale(LC_ALL, "ru");
@@ -401,10 +460,10 @@ int main() {
             unordered_map<Board, Board> temp_map;
 
             if (iteration == ITERATIONS - 1) {
-                IDS(test_board, MAX_DEPTH, solution_end_node, solution_parent_map);
+                A_star(test_board, solution_end_node, solution_parent_map);
             }
             else {
-                IDS(test_board, MAX_DEPTH, temp_end, temp_map);
+                A_star(test_board, temp_end, temp_map);
             }
         }
 
